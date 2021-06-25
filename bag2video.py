@@ -50,7 +50,18 @@ def write_frames(bag, writer, total, topic=None, nframes=repeat(1), start_time=r
     iterator = bag.read_messages(topics=topic, start_time=start_time, end_time=stop_time)
     for (topic, msg, time), reps in izip(iterator, nframes):
         print '\rWriting frame %s of %s at time %s' % (count, total, time),
-        img = np.asarray(bridge.imgmsg_to_cv2(msg, 'bgr8'))
+        if msg.encoding=='16UC1':
+            msg.encoding = 'mono16'
+            img = np.asarray(bridge.imgmsg_to_cv2(msg, 'mono16'))
+            
+            #img = cv2.convertScaleAbs(img)
+            img = np.uint8(255-np.clip(0.012*img, 0, 255))
+
+            #img = 0.05*img
+            #img = np.int8(img)
+            img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
+        else:
+            img = np.asarray(bridge.imgmsg_to_cv2(msg, 'bgr8'))
         for rep in range(reps):
             writer.write(img)
         imshow('win', img)
